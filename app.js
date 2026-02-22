@@ -155,19 +155,111 @@ const challengeLines = `
   .map((line) => line.trim())
   .filter(Boolean);
 
+const easyWords = [
+  "しろくま",
+  "ゆき",
+  "おうち",
+  "くう",
+  "りんご",
+  "みず",
+  "ともだち",
+  "うみ",
+  "ほし",
+  "ぷれぜんと",
+  "そら",
+  "くも",
+  "にじ",
+  "たいよう",
+  "つき",
+  "はる",
+  "なつ",
+  "あき",
+  "ふゆ",
+  "さくら",
+  "はな",
+  "たんぽぽ",
+  "ひまわり",
+  "もみじ",
+  "き",
+  "もり",
+  "やま",
+  "かわ",
+  "いけ",
+  "はなび",
+  "うさぎ",
+  "ねこ",
+  "いぬ",
+  "ことり",
+  "きつね",
+  "ぞう",
+  "ぱんだ",
+  "らいおん",
+  "ぺんぎん",
+  "いるか",
+  "かめ",
+  "さかな",
+  "かいがら",
+  "くじら",
+  "えび",
+  "かに",
+  "たこ",
+  "いか",
+  "おすし",
+  "おにぎり",
+  "ぱん",
+  "めろん",
+  "いちご",
+  "ぶどう",
+  "ばなな",
+  "みかん",
+  "すいか",
+  "もも",
+  "さくらんぼ",
+  "けーき",
+  "あめ",
+  "ちょこれーと",
+  "くっきー",
+  "じゅーす",
+  "おちゃ",
+  "ぎゅうにゅう",
+  "ぼうし",
+  "くつ",
+  "かばん",
+  "てぶくろ",
+  "まふらー",
+  "えんぴつ",
+  "けしごむ",
+  "のーと",
+  "ほん",
+  "えほん",
+  "つくえ",
+  "いす",
+  "でんしゃ",
+  "くるま",
+  "ばす",
+  "ひこうき",
+  "ふね",
+  "じてんしゃ",
+  "しんごう",
+  "みち",
+  "えき",
+  "こうえん",
+  "すべりだい",
+  "ぶらんこ",
+  "ぼーる",
+  "らっぱ",
+  "たいこ",
+  "ぴあの",
+  "ぎたー",
+  "おんがく",
+  "ゆめ",
+  "えがお",
+  "てがみ",
+  "たからばこ",
+];
+
 const promptSets = {
-  easy: [
-    { ja: "しろくま", target: "しろくま" },
-    { ja: "ゆき", target: "ゆき" },
-    { ja: "おうち", target: "おうち" },
-    { ja: "くう", target: "くう" },
-    { ja: "りんご", target: "りんご" },
-    { ja: "みず", target: "みず" },
-    { ja: "ともだち", target: "ともだち" },
-    { ja: "うみ", target: "うみ" },
-    { ja: "ほし", target: "ほし" },
-    { ja: "ぷれぜんと", target: "ぷれぜんと" },
-  ],
+  easy: easyWords.map((word) => ({ ja: word, target: word })),
   normal: [
     {
       ja: "こんにちは！きょうもいっしょにあそぼう？",
@@ -221,6 +313,46 @@ const giftItems = [
   { name: "キーホルダー", icon: "🔑" },
   { name: "犬のぬいぐるみ", icon: "🐶" },
 ];
+
+const treasurePrefixes = [
+  "しおかぜの",
+  "あさやけの",
+  "ゆうなぎの",
+  "なみおとの",
+  "ほしぞらの",
+  "さんごいろの",
+  "しらすなの",
+  "にじいろの",
+  "しずくの",
+  "ひだまりの",
+];
+
+const treasureBases = [
+  "かいがら",
+  "うみガラス",
+  "ミニボトル",
+  "ハンカチ",
+  "アクセサリー",
+  "ステッカー",
+  "ポストカード",
+  "チャーム",
+  "ぬいぐるみ",
+  "しあわせコイン",
+];
+
+const treasureIcons = ["🐚", "🫙", "🧵", "✨", "🎀", "🧸", "🪙", "🌺", "💌", "🧿"];
+
+const treasureCatalog = treasurePrefixes.flatMap((prefix, prefixIndex) =>
+  treasureBases.map((base, baseIndex) => {
+    const number = prefixIndex * treasureBases.length + baseIndex + 1;
+    return {
+      id: `gift_${number.toString().padStart(3, "0")}`,
+      name: `${prefix}${base}`,
+      icon: treasureIcons[(prefixIndex + baseIndex) % treasureIcons.length],
+    };
+  })
+);
+const treasureById = Object.fromEntries(treasureCatalog.map((item) => [item.id, item]));
 
 const GUEST_VISIT_MS = 60000;
 const guestScenes = [
@@ -282,6 +414,9 @@ const state = {
   timeLeft: SESSION_LIMIT_SECONDS,
   sessionCoins: 0,
   chatLog: [],
+  treasureCounts: {},
+  treasureHistory: [],
+  lastTreasureGiftAt: 0,
 };
 
 const ui = {
@@ -305,10 +440,16 @@ const ui = {
   typingInput: document.getElementById("typingInput"),
   submitBtn: document.getElementById("submitBtn"),
   feedback: document.getElementById("feedback"),
+  petBtn: document.getElementById("petBtn"),
+  praiseBtn: document.getElementById("praiseBtn"),
+  treasureBtn: document.getElementById("treasureBtn"),
   giftBtn: document.getElementById("giftBtn"),
   tripBtn: document.getElementById("tripBtn"),
   interiorBtn: document.getElementById("interiorBtn"),
   guestBtn: document.getElementById("guestBtn"),
+  treasureSummary: document.getElementById("treasureSummary"),
+  treasureCountdown: document.getElementById("treasureCountdown"),
+  treasureGallery: document.getElementById("treasureGallery"),
   unlockList: document.getElementById("unlockList"),
   chatLog: document.getElementById("chatLog"),
   room: document.getElementById("room"),
@@ -334,52 +475,214 @@ let guestVisiting = false;
 let lastValidTypingValue = "";
 let hawaiiReturnTimer = null;
 let roomThemeBeforeTrip = "normal";
+const COOKIE_PROFILE_ID = "kuu_profile_id";
+const COOKIE_PROGRESS_PREFIX = "kuu_progress_";
+const COOKIE_EXPIRE_DAYS = 365;
+const PET_ACTION_COOLDOWN_MS = 10000;
+const PRAISE_ACTION_COOLDOWN_MS = 10000;
+const TREASURE_GIFT_INTERVAL_MS = 24 * 60 * 60 * 1000;
+const TREASURE_HISTORY_LIMIT = 40;
+let petCooldownUntil = 0;
+let praiseCooldownUntil = 0;
+let petCooldownTimer = null;
+let praiseCooldownTimer = null;
+let treasureGalleryOpen = false;
+const travelThemes = new Set(["hawaii", "hiroshima"]);
+const tripDestinations = [
+  {
+    theme: "hawaii",
+    chat: "🌺 くうとハワイへ！ うみべでの思い出がふえた。",
+    feedback: "くうはハワイのうみでおおはしゃぎ！",
+    speech: "ハワイのうみ、きれい！ すっごくうれしい！",
+    mood: "うみだー！",
+  },
+  {
+    theme: "hiroshima",
+    chat: "⛩ くうと広島へ！ すてきな街の景色を見てきた。",
+    feedback: "くうは広島の景色にわくわくしてる！",
+    speech: "ひろしま、すてき！ もっと見てまわりたいな！",
+    mood: "わくわく！",
+  },
+];
+
+const sanitizeTreasureState = () => {
+  const nextCounts = {};
+  if (state.treasureCounts && typeof state.treasureCounts === "object") {
+    Object.entries(state.treasureCounts).forEach(([id, count]) => {
+      if (!treasureById[id]) return;
+      const safeCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+      if (safeCount > 0) nextCounts[id] = safeCount;
+    });
+  }
+  state.treasureCounts = nextCounts;
+
+  if (!Array.isArray(state.treasureHistory)) {
+    state.treasureHistory = [];
+  }
+  state.treasureHistory = state.treasureHistory
+    .map((entry) => {
+      if (typeof entry === "string" && treasureById[entry]) {
+        return { id: entry, at: 0 };
+      }
+      if (!entry || typeof entry !== "object") return null;
+      if (!treasureById[entry.id]) return null;
+      return {
+        id: entry.id,
+        at: Number.isFinite(entry.at) ? entry.at : 0,
+      };
+    })
+    .filter(Boolean)
+    .slice(0, TREASURE_HISTORY_LIMIT);
+
+  if (!Number.isFinite(state.lastTreasureGiftAt)) {
+    state.lastTreasureGiftAt = 0;
+  }
+};
+
+const canReceiveTreasureGift = () => Date.now() - state.lastTreasureGiftAt >= TREASURE_GIFT_INTERVAL_MS;
+const treasureRemainingMs = () => Math.max(0, TREASURE_GIFT_INTERVAL_MS - (Date.now() - state.lastTreasureGiftAt));
+
+const formatRemainingTime = (ms) => {
+  const totalSeconds = Math.ceil(ms / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return `${hours}時間${minutes}分`;
+};
+
+const receiveTreasureGift = (reason = "manual") => {
+  const item = treasureCatalog[Math.floor(Math.random() * treasureCatalog.length)];
+  state.treasureCounts[item.id] = (state.treasureCounts[item.id] || 0) + 1;
+  state.treasureHistory.unshift({ id: item.id, at: Date.now() });
+  state.treasureHistory = state.treasureHistory.slice(0, TREASURE_HISTORY_LIMIT);
+  state.lastTreasureGiftAt = Date.now();
+  state.friendship += 2;
+
+  if (reason === "auto") {
+    ui.feedback.textContent = `🧰 くうからプレゼント！「${item.icon} ${item.name}」をもらったよ。`;
+    addChat(`🧰 くうが今日のプレゼント「${item.icon} ${item.name}」をくれた。`);
+  } else {
+    ui.feedback.textContent = `🧰 たからばこを開けた！「${item.icon} ${item.name}」をもらったよ。`;
+    addChat(`🎁 たからばこから「${item.icon} ${item.name}」を受け取った。`);
+  }
+  showKuuSpeech("きょうのプレゼントだよ！", 2200);
+  setKuuMood("celebrate", "どうぞ♪", 1600);
+};
+
+const getCookie = (name) => {
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : "";
+};
+
+const setCookie = (name, value, days = COOKIE_EXPIRE_DAYS) => {
+  const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+};
+
+const getProfileId = () => {
+  let profileId = getCookie(COOKIE_PROFILE_ID);
+  if (profileId) return profileId;
+  profileId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+  setCookie(COOKIE_PROFILE_ID, profileId);
+  return profileId;
+};
+
+const loadCookieProgress = () => {
+  const profileId = getProfileId();
+  const raw = getCookie(`${COOKIE_PROGRESS_PREFIX}${profileId}`);
+  if (!raw) return;
+  try {
+    const cookieState = JSON.parse(raw);
+    if (Number.isFinite(cookieState.level) && cookieState.level > 0) {
+      state.level = Math.floor(cookieState.level);
+    }
+    if (Number.isFinite(cookieState.coins) && cookieState.coins >= 0) {
+      state.coins = Math.floor(cookieState.coins);
+    }
+    if (Number.isFinite(cookieState.friendship) && cookieState.friendship >= 0) {
+      state.friendship = Math.floor(cookieState.friendship);
+    }
+    if (["normal", "fancy", "hawaii", "hiroshima"].includes(cookieState.roomTheme)) {
+      state.roomTheme = cookieState.roomTheme;
+    }
+    if (cookieState.treasureCounts && typeof cookieState.treasureCounts === "object") {
+      state.treasureCounts = cookieState.treasureCounts;
+    }
+    if (Array.isArray(cookieState.treasureHistory)) {
+      state.treasureHistory = cookieState.treasureHistory;
+    }
+    if (Number.isFinite(cookieState.lastTreasureGiftAt)) {
+      state.lastTreasureGiftAt = cookieState.lastTreasureGiftAt;
+    }
+  } catch {
+    // 不正フォーマット時は無視して継続
+  }
+  sanitizeTreasureState();
+};
+
+const saveCookieProgress = () => {
+  const profileId = getProfileId();
+  const payload = JSON.stringify({
+    level: state.level,
+    coins: state.coins,
+    roomTheme: state.roomTheme,
+    friendship: state.friendship,
+    treasureCounts: state.treasureCounts,
+    treasureHistory: state.treasureHistory,
+    lastTreasureGiftAt: state.lastTreasureGiftAt,
+  });
+  setCookie(`${COOKIE_PROGRESS_PREFIX}${profileId}`, payload);
+};
 
 const load = () => {
   const raw = localStorage.getItem("kuu-typing-save");
-  if (!raw) return;
-  try {
-    const parsed = JSON.parse(raw);
-    Object.assign(state, parsed);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw);
+      Object.assign(state, parsed);
 
-    // 古いセーブデータ互換
-    if (!state.promptIndexByDifficulty) {
-      const baseIndex = Number.isInteger(parsed.promptIndex) ? parsed.promptIndex : 0;
-      state.promptIndexByDifficulty = {
-        easy: baseIndex,
-        normal: baseIndex,
-        challenge: baseIndex,
-      };
-    }
+      // 古いセーブデータ互換
+      if (!state.promptIndexByDifficulty) {
+        const baseIndex = Number.isInteger(parsed.promptIndex) ? parsed.promptIndex : 0;
+        state.promptIndexByDifficulty = {
+          easy: baseIndex,
+          normal: baseIndex,
+          challenge: baseIndex,
+        };
+      }
 
-    if (!["easy", "normal", "challenge"].includes(state.difficulty)) {
-      state.difficulty = "normal";
-    }
-    if (!["normal", "fancy", "hawaii"].includes(state.roomTheme)) {
-      state.roomTheme = "normal";
-    }
-    // ハワイ背景は一時演出なので、再読み込み時は通常部屋に戻す
-    if (state.roomTheme === "hawaii") {
-      state.roomTheme = "normal";
-    }
-    if (Array.isArray(state.unlocks)) {
-      state.unlocks = state.unlocks.filter((u) => !deprecatedUnlocks.has(u));
-    } else {
-      state.unlocks = [];
-    }
+      if (!["easy", "normal", "challenge"].includes(state.difficulty)) {
+        state.difficulty = "normal";
+      }
+      if (!["normal", "fancy", "hawaii", "hiroshima"].includes(state.roomTheme)) {
+        state.roomTheme = "normal";
+      }
+      // 旅行背景は一時演出なので、再読み込み時は通常部屋に戻す
+      if (travelThemes.has(state.roomTheme)) {
+        state.roomTheme = "normal";
+      }
+      if (Array.isArray(state.unlocks)) {
+        state.unlocks = state.unlocks.filter((u) => !deprecatedUnlocks.has(u));
+      } else {
+        state.unlocks = [];
+      }
 
-    if (!Number.isFinite(state.timeLeft)) state.timeLeft = SESSION_LIMIT_SECONDS;
-    if (!Number.isFinite(state.sessionCoins)) state.sessionCoins = 0;
+      if (!Number.isFinite(state.timeLeft)) state.timeLeft = SESSION_LIMIT_SECONDS;
+      if (!Number.isFinite(state.sessionCoins)) state.sessionCoins = 0;
 
-    state.timeLeft = Math.min(SESSION_LIMIT_SECONDS, Math.max(0, state.timeLeft));
-    state.sessionCoins = Math.max(0, state.sessionCoins);
-  } catch {
-    localStorage.removeItem("kuu-typing-save");
+      state.timeLeft = Math.min(SESSION_LIMIT_SECONDS, Math.max(0, state.timeLeft));
+      state.sessionCoins = Math.max(0, state.sessionCoins);
+      sanitizeTreasureState();
+    } catch {
+      localStorage.removeItem("kuu-typing-save");
+    }
   }
+  loadCookieProgress();
 };
 
 const save = () => {
   localStorage.setItem("kuu-typing-save", JSON.stringify(state));
+  saveCookieProgress();
 };
 
 const currentPrompts = () => promptSets[state.difficulty] || promptSets.normal;
@@ -656,6 +959,7 @@ const render = () => {
   const prompt = currentPrompt();
   const typingTarget = currentTypingTarget();
   const showTypingPrompt = sessionRunning;
+  const now = Date.now();
 
   ui.level.textContent = state.level;
   ui.exp.textContent = `${state.exp} / ${state.expMax}`;
@@ -683,6 +987,40 @@ const render = () => {
   ui.tripBtn.disabled = state.coins < 60 || state.level < 3;
   ui.interiorBtn.disabled = state.coins < 80 || state.level < 4;
   ui.guestBtn.disabled = guestVisiting;
+  ui.petBtn.disabled = false;
+  ui.praiseBtn.disabled = false;
+  ui.petBtn.textContent = "🤚 なでる (+1コイン / 10秒)";
+  ui.praiseBtn.textContent = "👏 ほめる (+1コイン / 10秒)";
+  const totalTreasures = Object.values(state.treasureCounts).reduce((sum, count) => sum + count, 0);
+  const canGiftNow = canReceiveTreasureGift();
+  ui.treasureBtn.textContent = canGiftNow ? "🧰 たからばこをあける（受け取る）" : "🧰 たからばこを見る";
+  ui.treasureSummary.textContent =
+    totalTreasures > 0 ? `いままでにもらったプレゼント: ${totalTreasures}個` : "まだプレゼントはありません。";
+  ui.treasureCountdown.textContent = canGiftNow
+    ? "今日のプレゼントを受け取れます。"
+    : `次のプレゼントまで: ${formatRemainingTime(treasureRemainingMs())}`;
+  ui.treasureGallery.hidden = !treasureGalleryOpen;
+  if (!treasureGalleryOpen) {
+    ui.treasureGallery.innerHTML = "";
+  } else if (!state.treasureHistory.length) {
+    ui.treasureGallery.innerHTML = '<p class="treasure-empty">たからばこは空っぽです。</p>';
+  } else {
+    const seen = new Set();
+    const items = [];
+    state.treasureHistory.forEach((entry) => {
+      if (seen.has(entry.id)) return;
+      seen.add(entry.id);
+      items.push(entry);
+    });
+    ui.treasureGallery.innerHTML = items
+      .slice(0, 30)
+      .map((entry) => {
+        const item = treasureById[entry.id];
+        const count = state.treasureCounts[entry.id] || 0;
+        return `<article class="treasure-card"><div class="treasure-photo">${item.icon}</div><div class="treasure-meta">${item.name}<br>x ${count}</div></article>`;
+      })
+      .join("");
+  }
   ui.guestBtn.textContent = guestVisiting ? "👧 おきゃくさまが滞在中..." : "👧 おきゃくさまをよぶ";
 
   ui.unlockList.innerHTML = state.unlocks.length
@@ -837,24 +1175,82 @@ ui.giftBtn.addEventListener("click", () => {
   render();
 });
 
+ui.petBtn.addEventListener("click", () => {
+  const now = Date.now();
+  if (now < petCooldownUntil) {
+    const remain = Math.ceil((petCooldownUntil - now) / 1000);
+    ui.feedback.textContent = `なでるは10秒で1コインだよ。あと${remain}秒待ってね。`;
+    setKuuMood("sniff", "まってね", 900);
+    return;
+  }
+  petCooldownUntil = now + PET_ACTION_COOLDOWN_MS;
+  if (petCooldownTimer) clearTimeout(petCooldownTimer);
+  petCooldownTimer = setTimeout(() => {
+    petCooldownTimer = null;
+    render();
+  }, PET_ACTION_COOLDOWN_MS + 50);
+  state.coins += 1;
+  state.friendship += 1;
+  ui.feedback.textContent = "くうをなでたよ。コイン +1！";
+  addChat("🤚 くうをなでた。くうはうれしそうに目を細めた。");
+  setKuuMood("happy", "えへへ", 1200);
+  render();
+});
+
+ui.praiseBtn.addEventListener("click", () => {
+  const now = Date.now();
+  if (now < praiseCooldownUntil) {
+    const remain = Math.ceil((praiseCooldownUntil - now) / 1000);
+    ui.feedback.textContent = `ほめるは10秒で1コインだよ。あと${remain}秒待ってね。`;
+    setKuuMood("sniff", "まってね", 900);
+    return;
+  }
+  praiseCooldownUntil = now + PRAISE_ACTION_COOLDOWN_MS;
+  if (praiseCooldownTimer) clearTimeout(praiseCooldownTimer);
+  praiseCooldownTimer = setTimeout(() => {
+    praiseCooldownTimer = null;
+    render();
+  }, PRAISE_ACTION_COOLDOWN_MS + 50);
+  state.coins += 1;
+  state.friendship += 1;
+  ui.feedback.textContent = "くうをほめたよ。コイン +1！";
+  addChat("👏 くうをたくさんほめた。くうがにこっとした。");
+  setKuuMood("celebrate", "にこにこ", 1200);
+  render();
+});
+
+ui.treasureBtn.addEventListener("click", () => {
+  if (canReceiveTreasureGift()) {
+    treasureGalleryOpen = true;
+    receiveTreasureGift("manual");
+  } else {
+    treasureGalleryOpen = !treasureGalleryOpen;
+    ui.feedback.textContent = treasureGalleryOpen
+      ? "たからばこの一覧をひらいたよ。"
+      : "たからばこの一覧をとじたよ。";
+  }
+  render();
+});
+
 ui.tripBtn.addEventListener("click", () => {
   if (state.coins < 60 || state.level < 3) return;
   state.coins -= 60;
   state.friendship += 20;
   state.exp += 20;
-  roomThemeBeforeTrip = state.roomTheme === "hawaii" ? roomThemeBeforeTrip : state.roomTheme;
-  state.roomTheme = "hawaii";
-  addChat("🌺 くうとハワイへ！ うみべでの思い出がふえた。");
-  ui.feedback.textContent = "くうはハワイのうみでおおはしゃぎ！";
-  showKuuSpeech("ハワイのうみ、きれい！ すっごくうれしい！", 2800);
-  setKuuMood("celebrate", "うみだー！", 2200);
+  roomThemeBeforeTrip = travelThemes.has(state.roomTheme) ? roomThemeBeforeTrip : state.roomTheme;
+  const destination = tripDestinations[Math.floor(Math.random() * tripDestinations.length)];
+  state.roomTheme = destination.theme;
+  addChat(destination.chat);
+  ui.feedback.textContent = destination.feedback;
+  showKuuSpeech(destination.speech, 2800);
+  setKuuMood("celebrate", destination.mood, 2200);
   if (hawaiiReturnTimer) {
     clearTimeout(hawaiiReturnTimer);
   }
   hawaiiReturnTimer = setTimeout(() => {
     state.roomTheme = roomThemeBeforeTrip;
-    ui.feedback.textContent = "ハワイりょこうがおわって、もとのおへやにもどったよ。";
-    addChat("🏠 ハワイ旅行がおわって、元のおへやにもどった。");
+    ui.feedback.textContent = "りょこうがおわって、もとのおへやにもどったよ。";
+    addChat("🏠 りょこうがおわって、元のおへやにもどった。");
     hawaiiReturnTimer = null;
     render();
   }, 30000);

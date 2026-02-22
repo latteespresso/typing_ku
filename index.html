@@ -68,6 +68,7 @@
             <div class="kuu-body">
               <i class="ear ear-left"></i>
               <i class="ear ear-right"></i>
+              <i class="kuu-ribbon" aria-hidden="true"></i>
               <div class="head">
                 <i class="eye eye-left"></i>
                 <i class="eye eye-right"></i>
@@ -83,6 +84,8 @@
               <i class="paw paw-right paw-arm"></i>
               <i class="paw paw-leg paw-leg-left"></i>
               <i class="paw paw-leg paw-leg-right"></i>
+              <i class="travel-sunglasses" aria-hidden="true"></i>
+              <i class="travel-carry" aria-hidden="true"></i>
             </div>
             <div id="kuuMood" class="kuu-mood">のんびり</div>
             <p id="kuuSpeech" class="kuu-speech"></p>
@@ -123,11 +126,32 @@
 
         <section class="actions">
           <h2>くうと一緒にできること</h2>
-          <div class="action-grid">
-            <button id="giftBtn" class="action-btn">🎁 プレゼント (30コイン)</button>
-            <button id="tripBtn" class="action-btn">✈️ りょこうへいく (60コイン / Lv3)</button>
-            <button id="interiorBtn" class="action-btn">🛋 インテリア強化 (80コイン / Lv4)</button>
-            <button id="guestBtn" class="action-btn">👧 おきゃくさまをよぶ</button>
+          <div class="action-groups">
+            <div class="action-group">
+              <p class="action-group-title">コインを使って楽しむ</p>
+              <div class="action-grid">
+                <button id="giftBtn" class="action-btn">🎁 プレゼント (30コイン)</button>
+                <button id="tripBtn" class="action-btn">✈️ りょこうへいく (60コイン / Lv3)</button>
+                <button id="interiorBtn" class="action-btn">🛋 インテリア強化 (80コイン / Lv4)</button>
+              </div>
+            </div>
+            <div class="action-group">
+              <p class="action-group-title">コインをためる</p>
+              <div class="action-grid">
+                <button id="petBtn" class="action-btn">🤚 なでる (+1コイン)</button>
+                <button id="praiseBtn" class="action-btn">👏 ほめる (+1コイン)</button>
+                <button id="guestBtn" class="action-btn">👧 おきゃくさまをよぶ</button>
+              </div>
+            </div>
+            <div class="action-group">
+              <p class="action-group-title">たからばこ</p>
+              <div class="action-grid">
+                <button id="treasureBtn" class="action-btn">🧰 たからばこを見る</button>
+              </div>
+              <p id="treasureSummary" class="treasure-summary">まだプレゼントはありません。</p>
+              <p id="treasureCountdown" class="treasure-countdown"></p>
+              <div id="treasureGallery" class="treasure-gallery" hidden></div>
+            </div>
           </div>
           <ul id="unlockList" class="unlock-list"></ul>
         </section>
