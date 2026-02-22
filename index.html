@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>くうのひみつのおへや</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="bg-shape shape-a"></div>
+    <div class="bg-shape shape-b"></div>
+    <main class="app">
+      <header class="hero title-strip" aria-label="くうのひみつのおへや">
+        <img class="title-strip-image" src="title.png" alt="くうのひみつのおへや" />
+      </header>
+
+      <section class="home-main card">
+        <div class="home-head">
+          <h2>くうのおうち</h2>
+          <p>くうの毎日が見えるメインルーム。タイピングで成長するとお部屋もどんどん豪華になります。</p>
+          <div class="room-theme-row">
+            <span class="room-theme-label">お部屋テーマ</span>
+            <div class="room-theme-buttons" role="group" aria-label="お部屋テーマ">
+              <button type="button" class="room-theme-btn" data-theme="normal">🏠 ノーマル</button>
+              <button type="button" class="room-theme-btn" data-theme="fancy">✨ ファンシー</button>
+            </div>
+          </div>
+        </div>
+        <section class="dashboard">
+          <div class="stat">
+            <span>レベル</span>
+            <strong id="level">1</strong>
+          </div>
+          <div class="stat">
+            <span>EXP</span>
+            <strong id="exp">0 / 100</strong>
+            <div class="bar"><i id="expBar"></i></div>
+          </div>
+          <div class="stat">
+            <span>コイン</span>
+            <strong id="coins">0</strong>
+          </div>
+          <div class="stat">
+            <span>なかよし度</span>
+            <strong id="friendship">0</strong>
+            <div class="bar warm"><i id="friendBar"></i></div>
+          </div>
+        </section>
+
+        <div id="room" class="room level-1">
+          <div class="ceiling-beam"></div>
+          <div class="floor"></div>
+          <div class="wall-lamp"></div>
+          <div class="window">
+            <div class="sea-horizon"></div>
+            <div class="sea-wave wave-back"></div>
+            <div class="sea-wave wave-front"></div>
+            <div class="whale">
+              <i class="whale-eye"></i>
+              <i class="whale-cheek"></i>
+            </div>
+            <div class="gull gull-a"></div>
+            <div class="gull gull-b"></div>
+          </div>
+          <div class="curtain curtain-left"></div>
+          <div class="curtain curtain-right"></div>
+          <div id="kuuInRoom" class="kuu-in-room mood-idle" aria-label="おうちのくう">
+            <div class="kuu-body">
+              <i class="ear ear-left"></i>
+              <i class="ear ear-right"></i>
+              <div class="head">
+                <i class="eye eye-left"></i>
+                <i class="eye eye-right"></i>
+                <i class="nose"></i>
+                <i class="mouth"></i>
+                <i class="cheek cheek-left"></i>
+                <i class="cheek cheek-right"></i>
+              </div>
+              <div class="torso">
+                <i class="belly"></i>
+              </div>
+              <i class="paw paw-left paw-arm"></i>
+              <i class="paw paw-right paw-arm"></i>
+              <i class="paw paw-leg paw-leg-left"></i>
+              <i class="paw paw-leg paw-leg-right"></i>
+            </div>
+            <div id="kuuMood" class="kuu-mood">のんびり</div>
+            <p id="kuuSpeech" class="kuu-speech"></p>
+          </div>
+          <div id="giftEvent" class="gift-event" aria-hidden="true">
+            <div class="gift-box">
+              <i class="gift-lid"></i>
+              <i class="gift-ribbon"></i>
+              <span id="giftItem" class="gift-item"></span>
+            </div>
+          </div>
+          <div class="bed" aria-label="ベッド"></div>
+          <div class="tea-table" aria-label="ティーテーブル">
+            <i class="table-leg leg-left"></i>
+            <i class="table-leg leg-right"></i>
+            <i class="cake"></i>
+            <i class="tea-cup"></i>
+            <i class="tea-pot"></i>
+          </div>
+          <div class="bookshelf"></div>
+          <div class="left-table" aria-label="テーブル"></div>
+          <div id="guestVisit" class="guest-visit" aria-hidden="true">
+            <img id="guestImage" class="guest-image" src="小学生.png" alt="遊びに来た小学生" />
+            <p id="guestSpeech" class="guest-speech">こんにちは！</p>
+          </div>
+          <div class="rug"></div>
+          <div class="wall-photo" aria-label="くうと女の子の写真">
+            <img
+              class="wall-photo-image"
+              src="Gemini_Generated_Image_2qq8fg2qq8fg2qq8.png"
+              alt="くうと女の子の写真"
+            />
+          </div>
+          <div class="plush">🧸</div>
+          <div class="plant">🪴</div>
+          <div id="roomBonus" class="room-bonus"></div>
+        </div>
+
+        <section class="actions">
+          <h2>くうと一緒にできること</h2>
+          <div class="action-grid">
+            <button id="giftBtn" class="action-btn">🎁 プレゼント (30コイン)</button>
+            <button id="tripBtn" class="action-btn">✈️ りょこうへいく (60コイン / Lv3)</button>
+            <button id="interiorBtn" class="action-btn">🛋 インテリア強化 (80コイン / Lv4)</button>
+            <button id="guestBtn" class="action-btn">👧 おきゃくさまをよぶ</button>
+          </div>
+          <ul id="unlockList" class="unlock-list"></ul>
+        </section>
+      </section>
+
+      <section class="typing card">
+        <h2>くうとの会話タイピング</h2>
+        <div class="difficulty-row">
+          <label for="difficultySelect">むずかしさ</label>
+          <select id="difficultySelect">
+            <option value="easy">かんたん</option>
+            <option value="normal" selected>ふつう</option>
+            <option value="challenge">チャレンジ</option>
+          </select>
+        </div>
+        <div class="timer-row">
+          <span>全体のこり</span>
+          <strong id="timeLeft">60</strong>
+          <span>秒</span>
+          <div class="timer-bar"><i id="timerBar"></i></div>
+          <button id="timerStartBtn" type="button" class="timer-btn">スタート</button>
+          <button id="timerStopBtn" type="button" class="timer-btn">ストップ</button>
+        </div>
+        <p class="coin-preview">ゲット見込み: <strong id="coinPreview">0</strong> コイン / 今回ゲット: <strong id="sessionCoins">0</strong> コイン</p>
+        <div class="line"><span>おだい:</span> <p id="promptJa"></p></div>
+        <p id="typingGuide" class="typing-guide">入力する文字（ローマ字 / 日本語どちらでもOK）: <code id="promptEn"></code></p>
+        <input id="typingInput" type="text" autocomplete="off" spellcheck="false" placeholder="ここに入力して Enter" />
+        <button id="submitBtn">送信</button>
+        <p id="feedback" class="feedback"></p>
+      </section>
+
+      <section class="log card">
+        <h2>会話ログ</h2>
+        <ul id="chatLog"></ul>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
