@@ -488,6 +488,7 @@ button:disabled {
 }
 
 .treasure-countdown {
+  display: none;
   margin: 0 0 6px;
   color: #5e7890;
   font-size: 0.8rem;
@@ -534,6 +535,71 @@ button:disabled {
   font-size: 0.82rem;
 }
 
+.room-theme-modal[hidden] {
+  display: none;
+}
+
+.room-theme-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+}
+
+.room-theme-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(39, 58, 74, 0.32);
+}
+
+.room-theme-modal-panel {
+  position: relative;
+  width: min(540px, calc(100vw - 24px));
+  border-radius: 18px;
+  border: 1px solid #d7e7f3;
+  background: linear-gradient(180deg, #ffffff, #f3fbff);
+  box-shadow: 0 14px 24px rgba(49, 79, 102, 0.2);
+  padding: 14px;
+}
+
+.room-theme-modal-panel h3 {
+  margin: 0;
+  color: #335b75;
+}
+
+.room-theme-modal-copy {
+  margin: 6px 0 10px;
+  color: #4f7087;
+  font-weight: 700;
+}
+
+.room-theme-modal-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.room-theme-choice {
+  border: 2px solid #c9dfef;
+  border-radius: 12px;
+  padding: 10px 8px;
+  background: linear-gradient(180deg, #ffffff, #f4fbff);
+  color: #2f4a5e;
+  font-weight: 800;
+  box-shadow: 0 4px 8px rgba(74, 112, 138, 0.12);
+}
+
+.room-theme-choice:hover {
+  border-color: #90bfda;
+}
+
+.room-theme-modal-close {
+  margin-top: 10px;
+  width: 100%;
+  background: linear-gradient(120deg, #95acba, #bac9d2);
+}
+
 .room {
   position: relative;
   height: 620px;
@@ -560,6 +626,26 @@ button:disabled {
   background: url("./部屋_ファンシー.png") center / cover no-repeat;
 }
 
+.room.room-image.room-theme-resort {
+  background: url("./resort.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-japaneseroom {
+  background: url("./japaneseroom.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-french {
+  background: url("./french.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-obake {
+  background: url("./obake.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-snowdome {
+  background: url("./snowdome.png") center / cover no-repeat;
+}
+
 .room.room-image.room-theme-hawaii {
   background: url("./beach.png") center / cover no-repeat;
 }
@@ -568,8 +654,25 @@ button:disabled {
   background: url("./hiroshima.png") center / cover no-repeat;
 }
 
+.room.room-image.room-theme-montsaintmichel {
+  background: url("./mont_saint _michel.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-dubrovnik {
+  background: url("./dubrovnik.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-newyork {
+  background: url("./newyork.png") center / cover no-repeat;
+}
+
 .room.room-image.room-theme-hawaii > :not(#kuuInRoom),
-.room.room-image.room-theme-hiroshima > :not(#kuuInRoom) {
+.room.room-image.room-theme-hiroshima > :not(#kuuInRoom),
+.room.room-image.room-theme-montsaintmichel > :not(#kuuInRoom),
+.room.room-image.room-theme-dubrovnik > :not(#kuuInRoom),
+.room.room-image.room-theme-newyork > :not(#kuuInRoom),
+.room.room-image.room-theme-obake > :not(#kuuInRoom),
+.room.room-image.room-theme-snowdome > :not(#kuuInRoom) {
   display: none !important;
 }
 
@@ -654,6 +757,10 @@ button:disabled {
   background: url("./テーブル.png") center / contain no-repeat;
   z-index: 6;
   pointer-events: none;
+}
+
+.room.room-image:not(.room-theme-normal):not(.room-theme-fancy) .left-table {
+  display: none !important;
 }
 
 .guest-visit {

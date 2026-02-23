@@ -17,12 +17,17 @@
       <section class="home-main card">
         <div class="home-head">
           <h2>くうのおうち</h2>
-          <p>くうの毎日が見えるメインルーム。タイピングで成長するとお部屋もどんどん豪華になります。</p>
+          <p>くうの毎日が見えるメインルーム。タイピングやふれあいでコインをためて、好きなもようがえを楽しもう。</p>
           <div class="room-theme-row">
             <span class="room-theme-label">お部屋テーマ</span>
             <div class="room-theme-buttons" role="group" aria-label="お部屋テーマ">
               <button type="button" class="room-theme-btn" data-theme="normal">🏠 ノーマル</button>
               <button type="button" class="room-theme-btn" data-theme="fancy">✨ ファンシー</button>
+              <button type="button" class="room-theme-btn" data-theme="resort">🏝 リゾート</button>
+              <button type="button" class="room-theme-btn" data-theme="japaneseroom">🍵 わしつ</button>
+              <button type="button" class="room-theme-btn" data-theme="french">🕊 フランスふう</button>
+              <button type="button" class="room-theme-btn" data-theme="obake">👻 おばけ</button>
+              <button type="button" class="room-theme-btn" data-theme="snowdome">❄️ スノードーム</button>
             </div>
           </div>
         </div>
@@ -132,7 +137,7 @@
               <div class="action-grid">
                 <button id="giftBtn" class="action-btn">🎁 プレゼント (30コイン)</button>
                 <button id="tripBtn" class="action-btn">✈️ りょこうへいく (60コイン / Lv3)</button>
-                <button id="interiorBtn" class="action-btn">🛋 インテリア強化 (80コイン / Lv4)</button>
+                <button id="interiorBtn" class="action-btn">🛋 もようがえ (80コイン)</button>
               </div>
             </div>
             <div class="action-group">
@@ -140,7 +145,7 @@
               <div class="action-grid">
                 <button id="petBtn" class="action-btn">🤚 なでる (+1コイン)</button>
                 <button id="praiseBtn" class="action-btn">👏 ほめる (+1コイン)</button>
-                <button id="guestBtn" class="action-btn">👧 おきゃくさまをよぶ</button>
+                <button id="guestBtn" class="action-btn">👧 おきゃくさまをよぶ (+3コイン)</button>
               </div>
             </div>
             <div class="action-group">
@@ -188,6 +193,16 @@
         <ul id="chatLog"></ul>
       </section>
     </main>
+
+    <div id="roomThemeModal" class="room-theme-modal" hidden>
+      <div class="room-theme-modal-backdrop" data-close="true"></div>
+      <div class="room-theme-modal-panel" role="dialog" aria-modal="true" aria-label="もようがえの選択">
+        <h3>もようがえをえらぶ</h3>
+        <p class="room-theme-modal-copy">解放したいおへやをえらんでね（80コイン）</p>
+        <div id="roomThemeModalOptions" class="room-theme-modal-options"></div>
+        <button id="roomThemeModalClose" type="button" class="room-theme-modal-close">とじる</button>
+      </div>
+    </div>
 
     <script src="app.js"></script>
   </body>

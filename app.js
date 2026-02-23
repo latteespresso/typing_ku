@@ -395,7 +395,21 @@ const deprecatedUnlocks = new Set([
   "ごうかなソファとキラキラライト",
 ]);
 
-const SESSION_LIMIT_SECONDS = 60;
+const DEFAULT_SESSION_LIMIT_SECONDS = 60;
+const CHALLENGE_SESSION_LIMIT_SECONDS = 90;
+const ROOM_THEME_UNLOCK_COST = 80;
+const DEFAULT_UNLOCKED_ROOM_THEMES = ["normal", "fancy"];
+const EXTRA_ROOM_THEME_ORDER = ["resort", "japaneseroom", "french", "obake", "snowdome"];
+const ALL_HOME_ROOM_THEMES = [...DEFAULT_UNLOCKED_ROOM_THEMES, ...EXTRA_ROOM_THEME_ORDER];
+const ROOM_THEME_LABELS = {
+  normal: "ノーマル",
+  fancy: "ファンシー",
+  resort: "リゾート",
+  japaneseroom: "わしつ",
+  french: "フランスふう",
+  obake: "おばけ",
+  snowdome: "スノードーム",
+};
 
 const state = {
   level: 1,
@@ -406,12 +420,13 @@ const state = {
   unlocks: [],
   difficulty: "normal",
   roomTheme: "normal",
+  unlockedRoomThemes: [...DEFAULT_UNLOCKED_ROOM_THEMES],
   promptIndexByDifficulty: {
     easy: 0,
     normal: 0,
     challenge: 0,
   },
-  timeLeft: SESSION_LIMIT_SECONDS,
+  timeLeft: DEFAULT_SESSION_LIMIT_SECONDS,
   sessionCoins: 0,
   chatLog: [],
   treasureCounts: {},
@@ -447,6 +462,9 @@ const ui = {
   tripBtn: document.getElementById("tripBtn"),
   interiorBtn: document.getElementById("interiorBtn"),
   guestBtn: document.getElementById("guestBtn"),
+  roomThemeModal: document.getElementById("roomThemeModal"),
+  roomThemeModalOptions: document.getElementById("roomThemeModalOptions"),
+  roomThemeModalClose: document.getElementById("roomThemeModalClose"),
   treasureSummary: document.getElementById("treasureSummary"),
   treasureCountdown: document.getElementById("treasureCountdown"),
   treasureGallery: document.getElementById("treasureGallery"),
@@ -487,9 +505,10 @@ let praiseCooldownUntil = 0;
 let petCooldownTimer = null;
 let praiseCooldownTimer = null;
 let treasureGalleryOpen = false;
-const travelThemes = new Set(["hawaii", "hiroshima"]);
+const travelThemes = new Set(["hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork"]);
 const tripDestinations = [
   {
+    place: "ハワイ",
     theme: "hawaii",
     chat: "🌺 くうとハワイへ！ うみべでの思い出がふえた。",
     feedback: "くうはハワイのうみでおおはしゃぎ！",
@@ -497,13 +516,99 @@ const tripDestinations = [
     mood: "うみだー！",
   },
   {
+    place: "広島",
     theme: "hiroshima",
     chat: "⛩ くうと広島へ！ すてきな街の景色を見てきた。",
     feedback: "くうは広島の景色にわくわくしてる！",
     speech: "ひろしま、すてき！ もっと見てまわりたいな！",
     mood: "わくわく！",
   },
+  {
+    place: "フランスのモンサンミッシェル",
+    theme: "montsaintmichel",
+    chat: "🏰 くうとフランスのモンサンミッシェルへ！ うっとりする景色だった。",
+    feedback: "くうはモンサンミッシェルの景色に見とれてる！",
+    speech: "わあ…まるでおとぎばなしみたい！",
+    mood: "うっとり",
+  },
+  {
+    place: "クロアチアのドブロヴニク",
+    theme: "dubrovnik",
+    chat: "🏝 くうとクロアチアのドブロヴニクへ！ 海と街並みがきれいだった。",
+    feedback: "くうはドブロヴニクの景色にテンションアップ！",
+    speech: "うみもまちもすっごくきれい！ また来たいな！",
+    mood: "きらきら",
+  },
+  {
+    place: "アメリカのニューヨーク",
+    theme: "newyork",
+    chat: "🗽 くうとアメリカのニューヨークへ！ 夜景がきらきらしていた。",
+    feedback: "くうはニューヨークの街にどきどきしてる！",
+    speech: "たかいビルがいっぱい！ きらきらしてるね！",
+    mood: "どきどき",
+  },
 ];
+
+const sanitizeUnlockedRoomThemes = () => {
+  if (!Array.isArray(state.unlockedRoomThemes)) {
+    state.unlockedRoomThemes = [...DEFAULT_UNLOCKED_ROOM_THEMES];
+    return;
+  }
+  const allowed = new Set(ALL_HOME_ROOM_THEMES);
+  const filtered = state.unlockedRoomThemes.filter((theme) => allowed.has(theme));
+  const merged = [...new Set([...DEFAULT_UNLOCKED_ROOM_THEMES, ...filtered])];
+  if (ALL_HOME_ROOM_THEMES.includes(state.roomTheme)) {
+    merged.push(state.roomTheme);
+  }
+  state.unlockedRoomThemes = [...new Set(merged)];
+};
+
+const nextUnlockableRoomTheme = () => EXTRA_ROOM_THEME_ORDER.find((theme) => !state.unlockedRoomThemes.includes(theme)) || null;
+const lockedRoomThemes = () => EXTRA_ROOM_THEME_ORDER.filter((theme) => !state.unlockedRoomThemes.includes(theme));
+
+const closeRoomThemeModal = () => {
+  ui.roomThemeModal.hidden = true;
+  ui.roomThemeModalOptions.innerHTML = "";
+};
+
+const unlockRoomTheme = (themeToUnlock) => {
+  if (!themeToUnlock) return;
+  if (!lockedRoomThemes().includes(themeToUnlock)) return;
+  if (state.coins < ROOM_THEME_UNLOCK_COST) {
+    ui.feedback.textContent = "コインがたりないよ。";
+    closeRoomThemeModal();
+    render();
+    return;
+  }
+
+  state.coins -= ROOM_THEME_UNLOCK_COST;
+  state.friendship += 8;
+  state.unlockedRoomThemes.push(themeToUnlock);
+  state.roomTheme = themeToUnlock;
+  roomThemeBeforeTrip = themeToUnlock;
+
+  const label = ROOM_THEME_LABELS[themeToUnlock] || "新しいテーマ";
+  ui.feedback.textContent = `${label}を解放したよ！`;
+  addChat(`🛋 もようがえで「${label}」を解放した！`);
+  setKuuMood("celebrate", "もようがえ！");
+  closeRoomThemeModal();
+  render();
+};
+
+const openRoomThemeModal = () => {
+  const locked = lockedRoomThemes();
+  if (!locked.length) {
+    ui.feedback.textContent = "もようがえはぜんぶ解放ずみだよ！";
+    return;
+  }
+  ui.roomThemeModalOptions.innerHTML = locked
+    .map((theme) => {
+      const label = ROOM_THEME_LABELS[theme] || theme;
+      return `<button type="button" class="room-theme-choice" data-theme-choice="${theme}">${label}</button>`;
+    })
+    .join("");
+  ui.roomThemeModal.hidden = false;
+};
 
 const sanitizeTreasureState = () => {
   const nextCounts = {};
@@ -602,8 +707,15 @@ const loadCookieProgress = () => {
     if (Number.isFinite(cookieState.friendship) && cookieState.friendship >= 0) {
       state.friendship = Math.floor(cookieState.friendship);
     }
-    if (["normal", "fancy", "hawaii", "hiroshima"].includes(cookieState.roomTheme)) {
+    if (
+      ["normal", "fancy", "resort", "japaneseroom", "french", "obake", "snowdome", "hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork"].includes(
+        cookieState.roomTheme
+      )
+    ) {
       state.roomTheme = cookieState.roomTheme;
+    }
+    if (Array.isArray(cookieState.unlockedRoomThemes)) {
+      state.unlockedRoomThemes = cookieState.unlockedRoomThemes;
     }
     if (cookieState.treasureCounts && typeof cookieState.treasureCounts === "object") {
       state.treasureCounts = cookieState.treasureCounts;
@@ -618,6 +730,7 @@ const loadCookieProgress = () => {
     // 不正フォーマット時は無視して継続
   }
   sanitizeTreasureState();
+  sanitizeUnlockedRoomThemes();
 };
 
 const saveCookieProgress = () => {
@@ -626,6 +739,7 @@ const saveCookieProgress = () => {
     level: state.level,
     coins: state.coins,
     roomTheme: state.roomTheme,
+    unlockedRoomThemes: state.unlockedRoomThemes,
     friendship: state.friendship,
     treasureCounts: state.treasureCounts,
     treasureHistory: state.treasureHistory,
@@ -654,7 +768,11 @@ const load = () => {
       if (!["easy", "normal", "challenge"].includes(state.difficulty)) {
         state.difficulty = "normal";
       }
-      if (!["normal", "fancy", "hawaii", "hiroshima"].includes(state.roomTheme)) {
+      if (
+        !["normal", "fancy", "resort", "japaneseroom", "french", "obake", "snowdome", "hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork"].includes(
+          state.roomTheme
+        )
+      ) {
         state.roomTheme = "normal";
       }
       // 旅行背景は一時演出なので、再読み込み時は通常部屋に戻す
@@ -667,17 +785,19 @@ const load = () => {
         state.unlocks = [];
       }
 
-      if (!Number.isFinite(state.timeLeft)) state.timeLeft = SESSION_LIMIT_SECONDS;
+      if (!Number.isFinite(state.timeLeft)) state.timeLeft = currentSessionLimitSeconds();
       if (!Number.isFinite(state.sessionCoins)) state.sessionCoins = 0;
 
-      state.timeLeft = Math.min(SESSION_LIMIT_SECONDS, Math.max(0, state.timeLeft));
+      state.timeLeft = Math.min(currentSessionLimitSeconds(), Math.max(0, state.timeLeft));
       state.sessionCoins = Math.max(0, state.sessionCoins);
       sanitizeTreasureState();
+      sanitizeUnlockedRoomThemes();
     } catch {
       localStorage.removeItem("kuu-typing-save");
     }
   }
   loadCookieProgress();
+  sanitizeUnlockedRoomThemes();
 };
 
 const save = () => {
@@ -686,6 +806,9 @@ const save = () => {
 };
 
 const currentPrompts = () => promptSets[state.difficulty] || promptSets.normal;
+const currentSessionLimitSeconds = () =>
+  state.difficulty === "challenge" ? CHALLENGE_SESSION_LIMIT_SECONDS : DEFAULT_SESSION_LIMIT_SECONDS;
+const currentSessionLabel = () => (state.difficulty === "challenge" ? "1分30秒" : "1分");
 
 const currentPrompt = () => {
   const list = currentPrompts();
@@ -792,8 +915,9 @@ const updateSubmitAvailability = () => {
 };
 
 const renderTimer = () => {
+  const limit = currentSessionLimitSeconds();
   ui.timeLeft.textContent = state.timeLeft;
-  ui.timerBar.style.width = `${Math.max(0, (state.timeLeft / SESSION_LIMIT_SECONDS) * 100)}%`;
+  ui.timerBar.style.width = `${Math.max(0, (state.timeLeft / limit) * 100)}%`;
   ui.coinPreview.textContent = estimateCoinGain();
   ui.sessionCoins.textContent = state.sessionCoins;
   ui.timerStartBtn.disabled = sessionRunning;
@@ -863,15 +987,15 @@ const stopTypingSession = (message) => {
 
 const startTypingSession = () => {
   if (sessionRunning) return;
-  state.timeLeft = SESSION_LIMIT_SECONDS;
+  state.timeLeft = currentSessionLimitSeconds();
   state.sessionCoins = 0;
   state.promptIndexByDifficulty[state.difficulty] = 0;
   sessionRunning = true;
   ui.typingInput.value = "";
   lastValidTypingValue = "";
   render();
-  ui.feedback.textContent = "1分チャレンジ開始！";
-  addChat("⏱ 1分タイピングチャレンジを開始した！");
+  ui.feedback.textContent = `${currentSessionLabel()}チャレンジ開始！`;
+  addChat(`⏱ ${currentSessionLabel()}タイピングチャレンジを開始した！`);
 
   if (sessionTimer) clearInterval(sessionTimer);
   sessionTimer = setInterval(() => {
@@ -970,7 +1094,10 @@ const render = () => {
 
   ui.difficultySelect.value = state.difficulty;
   ui.roomThemeButtons.forEach((btn) => {
+    const isUnlocked = state.unlockedRoomThemes.includes(btn.dataset.theme);
     const active = btn.dataset.theme === state.roomTheme;
+    btn.hidden = !isUnlocked;
+    btn.disabled = !isUnlocked;
     btn.classList.toggle("is-active", active);
     btn.setAttribute("aria-pressed", active ? "true" : "false");
   });
@@ -985,7 +1112,11 @@ const render = () => {
 
   ui.giftBtn.disabled = state.coins < 30;
   ui.tripBtn.disabled = state.coins < 60 || state.level < 3;
-  ui.interiorBtn.disabled = state.coins < 80 || state.level < 4;
+  const unlockableTheme = nextUnlockableRoomTheme();
+  ui.interiorBtn.disabled = state.coins < ROOM_THEME_UNLOCK_COST || !unlockableTheme;
+  ui.interiorBtn.textContent = unlockableTheme
+    ? `🛋 もようがえ (80コイン)`
+    : "🛋 もようがえ（コンプリート）";
   ui.guestBtn.disabled = guestVisiting;
   ui.petBtn.disabled = false;
   ui.praiseBtn.disabled = false;
@@ -996,9 +1127,7 @@ const render = () => {
   ui.treasureBtn.textContent = canGiftNow ? "🧰 たからばこをあける（受け取る）" : "🧰 たからばこを見る";
   ui.treasureSummary.textContent =
     totalTreasures > 0 ? `いままでにもらったプレゼント: ${totalTreasures}個` : "まだプレゼントはありません。";
-  ui.treasureCountdown.textContent = canGiftNow
-    ? "今日のプレゼントを受け取れます。"
-    : `次のプレゼントまで: ${formatRemainingTime(treasureRemainingMs())}`;
+  ui.treasureCountdown.textContent = "";
   ui.treasureGallery.hidden = !treasureGalleryOpen;
   if (!treasureGalleryOpen) {
     ui.treasureGallery.innerHTML = "";
@@ -1021,11 +1150,11 @@ const render = () => {
       })
       .join("");
   }
-  ui.guestBtn.textContent = guestVisiting ? "👧 おきゃくさまが滞在中..." : "👧 おきゃくさまをよぶ";
+  ui.guestBtn.textContent = guestVisiting ? "👧 おきゃくさまが滞在中..." : "👧 おきゃくさまをよぶ (+3コイン)";
 
   ui.unlockList.innerHTML = state.unlocks.length
     ? state.unlocks.map((u) => `<li>${u}</li>`).join("")
-    : "<li>まだ解放されていません。タイピングで育てよう。</li>";
+    : "";
 
   ui.chatLog.innerHTML = state.chatLog.length
     ? state.chatLog.map((line) => `<li>${line}</li>`).join("")
@@ -1098,19 +1227,24 @@ ui.difficultySelect.addEventListener("change", (e) => {
   addChat(`📘 むずかしさ変更: ${difficultySettings[state.difficulty].label}`);
   ui.typingInput.value = "";
   lastValidTypingValue = "";
+  if (!sessionRunning) {
+    state.timeLeft = currentSessionLimitSeconds();
+  }
   render();
 });
 
 ui.roomThemeButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
+    if (!state.unlockedRoomThemes.includes(btn.dataset.theme)) return;
     if (hawaiiReturnTimer) {
       clearTimeout(hawaiiReturnTimer);
       hawaiiReturnTimer = null;
     }
     state.roomTheme = btn.dataset.theme;
     roomThemeBeforeTrip = state.roomTheme;
-    ui.feedback.textContent = `お部屋テーマを${state.roomTheme === "fancy" ? "ファンシー" : "ノーマル"}にしたよ。`;
-    addChat(`🖼 お部屋テーマ変更: ${state.roomTheme === "fancy" ? "ファンシー" : "ノーマル"}`);
+    const label = ROOM_THEME_LABELS[state.roomTheme] || "ノーマル";
+    ui.feedback.textContent = `お部屋テーマを${label}にしたよ。`;
+    addChat(`🖼 お部屋テーマ変更: ${label}`);
     render();
   });
 });
@@ -1242,7 +1376,7 @@ ui.tripBtn.addEventListener("click", () => {
   state.roomTheme = destination.theme;
   addChat(destination.chat);
   ui.feedback.textContent = destination.feedback;
-  showKuuSpeech(destination.speech, 2800);
+  showKuuSpeech(`${destination.place}についたよ！ ${destination.speech}`, 3200);
   setKuuMood("celebrate", destination.mood, 2200);
   if (hawaiiReturnTimer) {
     clearTimeout(hawaiiReturnTimer);
@@ -1259,23 +1393,44 @@ ui.tripBtn.addEventListener("click", () => {
 });
 
 ui.interiorBtn.addEventListener("click", () => {
-  if (state.coins < 80 || state.level < 4) return;
-  state.coins -= 80;
-  state.friendship += 15;
-  addChat("🛋 おうちがごうかになって、くうがくるくる踊った！");
-  setKuuMood("celebrate", "わーい！");
-  render();
+  openRoomThemeModal();
 });
 
 ui.guestBtn.addEventListener("click", () => {
+  state.coins += 3;
+  ui.feedback.textContent = "おきゃくさまをよんだよ。コイン +3！";
+  addChat("🪙 おきゃくさまをよんで、コインを3まいもらった。");
   startGuestVisit();
+  render();
 });
 
 load();
-state.timeLeft = SESSION_LIMIT_SECONDS;
+state.timeLeft = currentSessionLimitSeconds();
 state.sessionCoins = 0;
-if (state.roomTheme === "fancy") {
-  roomThemeBeforeTrip = "fancy";
+if (state.unlockedRoomThemes.includes(state.roomTheme)) {
+  roomThemeBeforeTrip = state.roomTheme;
 }
+
+ui.roomThemeModalClose.addEventListener("click", () => {
+  closeRoomThemeModal();
+});
+
+ui.roomThemeModal.addEventListener("click", (e) => {
+  const choice = e.target.closest("[data-theme-choice]");
+  if (choice) {
+    unlockRoomTheme(choice.dataset.themeChoice);
+    return;
+  }
+  if (e.target.closest("[data-close='true']")) {
+    closeRoomThemeModal();
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !ui.roomThemeModal.hidden) {
+    closeRoomThemeModal();
+  }
+});
+
 render();
 startIdleActions();
