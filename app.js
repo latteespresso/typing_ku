@@ -262,24 +262,24 @@ const promptSets = {
   easy: easyWords.map((word) => ({ ja: word, target: word })),
   normal: [
     {
-      ja: "こんにちは！きょうもいっしょにあそぼう？",
-      en: "konnichiwa kyoumo isshoni asobou",
+      ja: "きょうもあそぼう",
+      en: "kyoumoasobou",
     },
     {
-      ja: "ぼくのおうち、もっとかわいくしたいな。",
-      en: "bokuno ouchi motto kawaiku shitaina",
+      ja: "くうのおへやだよ",
+      en: "kuunooheyadayo",
     },
     {
-      ja: "タイピングがはやいと、ゆきのくにへりょこうできるよ！",
-      en: "typing ga hayaito yuki no kuni e ryokou dekiruyo",
+      ja: "たいぴんぐれんしゅう",
+      en: "taipingurenshuu",
     },
     {
-      ja: "プレゼントをもらうと、こころがぽかぽかするんだ。",
-      en: "purezento wo morauto kokoro ga pokapoka surunda",
+      ja: "ともだちだいすき",
+      en: "tomodachidaisuki",
     },
     {
-      ja: "きみとおはなしするの、だいすき！",
-      en: "kimito ohanashi suruno daisuki",
+      ja: "おへやをかたづける",
+      en: "oheyawokatazukeru",
     },
   ],
   challenge: challengeLines.map((line) => ({ ja: line, en: line })),
@@ -312,6 +312,31 @@ const giftItems = [
   { name: "指輪", icon: "💍" },
   { name: "キーホルダー", icon: "🔑" },
   { name: "犬のぬいぐるみ", icon: "🐶" },
+  { name: "ねこのぬいぐるみ", icon: "🐱" },
+  { name: "うさぎのぬいぐるみ", icon: "🐰" },
+  { name: "ハートのクッション", icon: "🛋️" },
+  { name: "ミニおはな", icon: "🌸" },
+  { name: "カラーペンセット", icon: "🖍️" },
+  { name: "かわいいノート", icon: "📓" },
+  { name: "ふわふわポーチ", icon: "🧸" },
+  { name: "リボン", icon: "🎀" },
+  { name: "ヘアピン", icon: "✨" },
+  { name: "きらきらブレスレット", icon: "📿" },
+  { name: "ほしのネックレス", icon: "⭐" },
+  { name: "ハンドタオル", icon: "🧺" },
+  { name: "くまマグカップ", icon: "☕" },
+  { name: "ミニキャンドル", icon: "🕯️" },
+  { name: "音楽オルゴール", icon: "🎼" },
+  { name: "ちいさな地球儀", icon: "🌍" },
+  { name: "ぬりえセット", icon: "🎨" },
+  { name: "パズル", icon: "🧩" },
+  { name: "しゃぼんだま", icon: "🫧" },
+  { name: "すなあそびセット", icon: "🏖️" },
+  { name: "望遠鏡", icon: "🔭" },
+  { name: "プラネタリウムライト", icon: "🌌" },
+  { name: "らくがきボード", icon: "📝" },
+  { name: "てづくりクッキー", icon: "🍪" },
+  { name: "はちみつキャンディ", icon: "🍯" },
 ];
 
 const treasurePrefixes = [
@@ -395,11 +420,15 @@ const deprecatedUnlocks = new Set([
   "ごうかなソファとキラキラライト",
 ]);
 
-const DEFAULT_SESSION_LIMIT_SECONDS = 60;
+const DEFAULT_SESSION_LIMIT_SECONDS = 90;
 const CHALLENGE_SESSION_LIMIT_SECONDS = 90;
+const SESSION_QUESTION_LIMIT = 5;
+const PASS_ACCURACY_RATIO = 0.6;
 const ROOM_THEME_UNLOCK_COST = 80;
+const MOTTEIN_TRIP_COST = 30;
+const MOTTEIN_TRIP_MS = 15000;
 const DEFAULT_UNLOCKED_ROOM_THEMES = ["normal", "fancy"];
-const EXTRA_ROOM_THEME_ORDER = ["resort", "japaneseroom", "french", "obake", "snowdome"];
+const EXTRA_ROOM_THEME_ORDER = ["resort", "japaneseroom", "french", "obake", "snowdome", "safari", "aquarium"];
 const ALL_HOME_ROOM_THEMES = [...DEFAULT_UNLOCKED_ROOM_THEMES, ...EXTRA_ROOM_THEME_ORDER];
 const ROOM_THEME_LABELS = {
   normal: "ノーマル",
@@ -409,6 +438,8 @@ const ROOM_THEME_LABELS = {
   french: "フランスふう",
   obake: "おばけ",
   snowdome: "スノードーム",
+  safari: "サファリ",
+  aquarium: "すいぞくかん",
 };
 
 const state = {
@@ -428,10 +459,22 @@ const state = {
   },
   timeLeft: DEFAULT_SESSION_LIMIT_SECONDS,
   sessionCoins: 0,
+  sessionAnswered: 0,
+  sessionCorrectChars: 0,
+  sessionTotalChars: 0,
   chatLog: [],
   treasureCounts: {},
   treasureHistory: [],
-  lastTreasureGiftAt: 0,
+  motteinVisitCount: 0,
+  motteinRoomCleaned: false,
+  typingStats: {
+    totalQuestions: 0,
+    totalCorrectChars: 0,
+    totalChars: 0,
+    lastSessionCompleted: false,
+    lastSessionQuestions: 0,
+    lastSessionAccuracy: 0,
+  },
 };
 
 const ui = {
@@ -461,6 +504,7 @@ const ui = {
   giftBtn: document.getElementById("giftBtn"),
   tripBtn: document.getElementById("tripBtn"),
   interiorBtn: document.getElementById("interiorBtn"),
+  motteinBtn: document.getElementById("motteinBtn"),
   guestBtn: document.getElementById("guestBtn"),
   roomThemeModal: document.getElementById("roomThemeModal"),
   roomThemeModalOptions: document.getElementById("roomThemeModalOptions"),
@@ -476,6 +520,7 @@ const ui = {
   kuuMood: document.getElementById("kuuMood"),
   kuuSpeech: document.getElementById("kuuSpeech"),
   guestVisit: document.getElementById("guestVisit"),
+  guestImage: document.getElementById("guestImage"),
   guestSpeech: document.getElementById("guestSpeech"),
   giftEvent: document.getElementById("giftEvent"),
   giftItem: document.getElementById("giftItem"),
@@ -490,22 +535,25 @@ let sessionRunning = false;
 let guestVisitTimer = null;
 let guestActionTimer = null;
 let guestVisiting = false;
+let motteinTripActive = false;
+let motteinTestPending = false;
+let motteinSceneTimer = null;
 let lastValidTypingValue = "";
 let hawaiiReturnTimer = null;
+let hiroshimaDeerSpeechTimer = null;
 let roomThemeBeforeTrip = "normal";
 const COOKIE_PROFILE_ID = "kuu_profile_id";
 const COOKIE_PROGRESS_PREFIX = "kuu_progress_";
 const COOKIE_EXPIRE_DAYS = 365;
-const PET_ACTION_COOLDOWN_MS = 10000;
+const PET_ACTION_COOLDOWN_MS = 5 * 60 * 1000;
 const PRAISE_ACTION_COOLDOWN_MS = 10000;
-const TREASURE_GIFT_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const TREASURE_HISTORY_LIMIT = 40;
 let petCooldownUntil = 0;
 let praiseCooldownUntil = 0;
 let petCooldownTimer = null;
 let praiseCooldownTimer = null;
 let treasureGalleryOpen = false;
-const travelThemes = new Set(["hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork"]);
+const travelThemes = new Set(["hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork", "osakaexpo", "gomiyashiki"]);
 const tripDestinations = [
   {
     place: "ハワイ",
@@ -546,6 +594,14 @@ const tripDestinations = [
     feedback: "くうはニューヨークの街にどきどきしてる！",
     speech: "たかいビルがいっぱい！ きらきらしてるね！",
     mood: "どきどき",
+  },
+  {
+    place: "日本の大阪万博",
+    theme: "osakaexpo",
+    chat: "🎡 くうと日本の大阪万博へ！ 未来のけしきをたのしんだ。",
+    feedback: "くうは大阪万博の会場にわくわくしてる！",
+    speech: "日本の大阪万博に着いたよ。みらいってすごいね！",
+    mood: "みらい！",
   },
 ];
 
@@ -639,32 +695,120 @@ const sanitizeTreasureState = () => {
     .filter(Boolean)
     .slice(0, TREASURE_HISTORY_LIMIT);
 
-  if (!Number.isFinite(state.lastTreasureGiftAt)) {
-    state.lastTreasureGiftAt = 0;
+};
+
+const sanitizeProgressState = () => {
+  if (!Number.isFinite(state.motteinVisitCount) || state.motteinVisitCount < 0) {
+    state.motteinVisitCount = 0;
+  } else {
+    state.motteinVisitCount = Math.floor(state.motteinVisitCount);
+  }
+  if (typeof state.motteinRoomCleaned !== "boolean") {
+    state.motteinRoomCleaned = false;
+  }
+  if (!state.typingStats || typeof state.typingStats !== "object") {
+    state.typingStats = {
+      totalQuestions: 0,
+      totalCorrectChars: 0,
+      totalChars: 0,
+      lastSessionCompleted: false,
+      lastSessionQuestions: 0,
+      lastSessionAccuracy: 0,
+    };
+  }
+  if (!Number.isFinite(state.typingStats.totalQuestions) || state.typingStats.totalQuestions < 0) state.typingStats.totalQuestions = 0;
+  if (!Number.isFinite(state.typingStats.totalCorrectChars) || state.typingStats.totalCorrectChars < 0) state.typingStats.totalCorrectChars = 0;
+  if (!Number.isFinite(state.typingStats.totalChars) || state.typingStats.totalChars < 0) state.typingStats.totalChars = 0;
+  if (typeof state.typingStats.lastSessionCompleted !== "boolean") state.typingStats.lastSessionCompleted = false;
+  if (!Number.isFinite(state.typingStats.lastSessionQuestions) || state.typingStats.lastSessionQuestions < 0) state.typingStats.lastSessionQuestions = 0;
+  if (!Number.isFinite(state.typingStats.lastSessionAccuracy) || state.typingStats.lastSessionAccuracy < 0) state.typingStats.lastSessionAccuracy = 0;
+  state.typingStats.totalQuestions = Math.floor(state.typingStats.totalQuestions);
+  state.typingStats.totalCorrectChars = Math.floor(state.typingStats.totalCorrectChars);
+  state.typingStats.totalChars = Math.floor(state.typingStats.totalChars);
+  state.typingStats.lastSessionQuestions = Math.floor(state.typingStats.lastSessionQuestions);
+};
+
+const hasMotteinCleanupSkill = () => {
+  return (
+    state.typingStats.lastSessionCompleted &&
+    state.typingStats.lastSessionQuestions >= SESSION_QUESTION_LIMIT &&
+    state.typingStats.lastSessionAccuracy >= PASS_ACCURACY_RATIO
+  );
+};
+
+const resetGuestToDefault = () => {
+  ui.guestVisit.classList.remove("active");
+  ui.guestVisit.setAttribute("aria-hidden", "true");
+  ui.guestImage.src = "小学生.png";
+  ui.guestImage.alt = "遊びに来た小学生";
+};
+
+const clearMotteinScene = () => {
+  if (motteinSceneTimer) {
+    clearTimeout(motteinSceneTimer);
+    motteinSceneTimer = null;
   }
 };
 
-const canReceiveTreasureGift = () => Date.now() - state.lastTreasureGiftAt >= TREASURE_GIFT_INTERVAL_MS;
-const treasureRemainingMs = () => Math.max(0, TREASURE_GIFT_INTERVAL_MS - (Date.now() - state.lastTreasureGiftAt));
-
-const formatRemainingTime = (ms) => {
-  const totalSeconds = Math.ceil(ms / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  return `${hours}時間${minutes}分`;
+const returnFromMotteinRoom = (message, chat) => {
+  clearMotteinScene();
+  if (hawaiiReturnTimer) clearTimeout(hawaiiReturnTimer);
+  hawaiiReturnTimer = setTimeout(() => {
+    state.roomTheme = roomThemeBeforeTrip;
+    motteinTripActive = false;
+    motteinTestPending = false;
+    resetGuestToDefault();
+    ui.feedback.textContent = message;
+    addChat(chat);
+    hawaiiReturnTimer = null;
+    render();
+  }, 2800);
 };
 
-const receiveTreasureGift = (reason = "manual") => {
+const resolveMotteinTestResult = () => {
+  if (!motteinTripActive || !motteinTestPending) return;
+  motteinTestPending = false;
+  const passed = hasMotteinCleanupSkill();
+  if (passed) {
+    state.motteinRoomCleaned = true;
+    state.friendship += 18;
+    state.coins += 10;
+    ui.guestImage.src = "も.png";
+    ui.guestImage.alt = "くうのおともだち、もってぃん";
+    ui.guestSpeech.textContent = "やった！ おへやがきれいになったよ！";
+    ui.feedback.textContent = "テスト合格！ もってぃんといっしょに片付けできたよ。コイン +10";
+    addChat("🧹 テスト合格！ くうともってぃんが力を合わせて部屋を片付けた。");
+    showKuuSpeech("やった！ ぴかぴかだね！", 2400);
+    setKuuMood("celebrate", "ぴかぴか", 1800);
+    returnFromMotteinRoom("片付けがおわって、くうのおへやにもどったよ。", "✨ 片付けが終わって、くうのおへやにもどった。");
+  } else {
+    ui.guestImage.src = "も母.png";
+    ui.guestImage.alt = "もってぃんの母";
+    ui.guestSpeech.textContent = "まだだめ。もっとタイピング練習してきなさい。";
+    ui.feedback.textContent = "テスト不合格。もっとタイピング練習して、また挑戦しよう。";
+    addChat("👩 もってぃんの母: まだだめ。もっとタイピング練習してきなさい。");
+    showKuuSpeech("つぎはもっとがんばる！", 2200);
+    setKuuMood("sad", "くやしい", 1700);
+    returnFromMotteinRoom("もってぃんの部屋から、くうのおへやにもどったよ。", "🏠 もってぃんの部屋をあとにして、くうのおへやにもどった。");
+  }
+};
+
+const scrollToRoomTop = () => {
+  if (!ui.room) return;
+  ui.room.scrollIntoView({ behavior: "smooth", block: "start" });
+};
+
+const receiveTreasureGift = (reason = "levelup") => {
   const item = treasureCatalog[Math.floor(Math.random() * treasureCatalog.length)];
   state.treasureCounts[item.id] = (state.treasureCounts[item.id] || 0) + 1;
   state.treasureHistory.unshift({ id: item.id, at: Date.now() });
   state.treasureHistory = state.treasureHistory.slice(0, TREASURE_HISTORY_LIMIT);
-  state.lastTreasureGiftAt = Date.now();
   state.friendship += 2;
+  scrollToRoomTop();
 
-  if (reason === "auto") {
-    ui.feedback.textContent = `🧰 くうからプレゼント！「${item.icon} ${item.name}」をもらったよ。`;
-    addChat(`🧰 くうが今日のプレゼント「${item.icon} ${item.name}」をくれた。`);
+  if (reason === "levelup") {
+    ui.feedback.textContent = `🧰 レベルアッププレゼント！「${item.icon} ${item.name}」をもらったよ。`;
+    addChat(`🧰 レベルアップで、くうがプレゼント「${item.icon} ${item.name}」をくれた。`);
   } else {
     ui.feedback.textContent = `🧰 たからばこを開けた！「${item.icon} ${item.name}」をもらったよ。`;
     addChat(`🎁 たからばこから「${item.icon} ${item.name}」を受け取った。`);
@@ -708,7 +852,7 @@ const loadCookieProgress = () => {
       state.friendship = Math.floor(cookieState.friendship);
     }
     if (
-      ["normal", "fancy", "resort", "japaneseroom", "french", "obake", "snowdome", "hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork"].includes(
+      ["normal", "fancy", "resort", "japaneseroom", "french", "obake", "snowdome", "safari", "aquarium", "hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork", "osakaexpo", "gomiyashiki"].includes(
         cookieState.roomTheme
       )
     ) {
@@ -723,14 +867,21 @@ const loadCookieProgress = () => {
     if (Array.isArray(cookieState.treasureHistory)) {
       state.treasureHistory = cookieState.treasureHistory;
     }
-    if (Number.isFinite(cookieState.lastTreasureGiftAt)) {
-      state.lastTreasureGiftAt = cookieState.lastTreasureGiftAt;
+    if (Number.isFinite(cookieState.motteinVisitCount)) {
+      state.motteinVisitCount = cookieState.motteinVisitCount;
+    }
+    if (typeof cookieState.motteinRoomCleaned === "boolean") {
+      state.motteinRoomCleaned = cookieState.motteinRoomCleaned;
+    }
+    if (cookieState.typingStats && typeof cookieState.typingStats === "object") {
+      state.typingStats = cookieState.typingStats;
     }
   } catch {
     // 不正フォーマット時は無視して継続
   }
   sanitizeTreasureState();
   sanitizeUnlockedRoomThemes();
+  sanitizeProgressState();
 };
 
 const saveCookieProgress = () => {
@@ -743,7 +894,9 @@ const saveCookieProgress = () => {
     friendship: state.friendship,
     treasureCounts: state.treasureCounts,
     treasureHistory: state.treasureHistory,
-    lastTreasureGiftAt: state.lastTreasureGiftAt,
+    motteinVisitCount: state.motteinVisitCount,
+    motteinRoomCleaned: state.motteinRoomCleaned,
+    typingStats: state.typingStats,
   });
   setCookie(`${COOKIE_PROGRESS_PREFIX}${profileId}`, payload);
 };
@@ -769,7 +922,7 @@ const load = () => {
         state.difficulty = "normal";
       }
       if (
-        !["normal", "fancy", "resort", "japaneseroom", "french", "obake", "snowdome", "hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork"].includes(
+        !["normal", "fancy", "resort", "japaneseroom", "french", "obake", "snowdome", "safari", "aquarium", "hawaii", "hiroshima", "montsaintmichel", "dubrovnik", "newyork", "osakaexpo", "gomiyashiki"].includes(
           state.roomTheme
         )
       ) {
@@ -792,12 +945,14 @@ const load = () => {
       state.sessionCoins = Math.max(0, state.sessionCoins);
       sanitizeTreasureState();
       sanitizeUnlockedRoomThemes();
+      sanitizeProgressState();
     } catch {
       localStorage.removeItem("kuu-typing-save");
     }
   }
   loadCookieProgress();
   sanitizeUnlockedRoomThemes();
+  sanitizeProgressState();
 };
 
 const save = () => {
@@ -808,7 +963,7 @@ const save = () => {
 const currentPrompts = () => promptSets[state.difficulty] || promptSets.normal;
 const currentSessionLimitSeconds = () =>
   state.difficulty === "challenge" ? CHALLENGE_SESSION_LIMIT_SECONDS : DEFAULT_SESSION_LIMIT_SECONDS;
-const currentSessionLabel = () => (state.difficulty === "challenge" ? "1分30秒" : "1分");
+const currentSessionLabel = () => "1分30秒";
 
 const currentPrompt = () => {
   const list = currentPrompts();
@@ -906,8 +1061,7 @@ const canSubmitTyping = () => {
   const answer = normalizeForTyping(ui.typingInput.value);
   if (!answer) return false;
   if (state.difficulty === "easy" && !isHiraganaWord(answer)) return false;
-  const target = normalizeForTyping(currentTypingTarget());
-  return answer === target;
+  return true;
 };
 
 const updateSubmitAvailability = () => {
@@ -950,6 +1104,8 @@ const startGuestVisit = () => {
   guestVisiting = true;
   ui.guestVisit.classList.add("active");
   ui.guestVisit.setAttribute("aria-hidden", "false");
+  ui.guestImage.src = "小学生.png";
+  ui.guestImage.alt = "遊びに来た小学生";
   ui.guestSpeech.textContent = "こんにちは！きょう学校でね…";
   addChat("👧 小学生のおきゃくさまが遊びにきた！");
   showKuuSpeech("ようこそ！学校のお話きかせて！", 3000);
@@ -982,6 +1138,9 @@ const stopTypingSession = (message) => {
   sessionTimer = null;
   sessionRunning = false;
   if (message) ui.feedback.textContent = message;
+  if (motteinTestPending) {
+    resolveMotteinTestResult();
+  }
   renderTimer();
 };
 
@@ -989,21 +1148,30 @@ const startTypingSession = () => {
   if (sessionRunning) return;
   state.timeLeft = currentSessionLimitSeconds();
   state.sessionCoins = 0;
+  state.sessionAnswered = 0;
+  state.sessionCorrectChars = 0;
+  state.sessionTotalChars = 0;
   state.promptIndexByDifficulty[state.difficulty] = 0;
   sessionRunning = true;
   ui.typingInput.value = "";
   lastValidTypingValue = "";
   render();
-  ui.feedback.textContent = `${currentSessionLabel()}チャレンジ開始！`;
-  addChat(`⏱ ${currentSessionLabel()}タイピングチャレンジを開始した！`);
+  ui.feedback.textContent = `${currentSessionLabel()}・${SESSION_QUESTION_LIMIT}問チャレンジ開始！`;
+  addChat(`⏱ ${currentSessionLabel()}で${SESSION_QUESTION_LIMIT}問チャレンジを開始した！`);
 
   if (sessionTimer) clearInterval(sessionTimer);
   sessionTimer = setInterval(() => {
     state.timeLeft -= 1;
     if (state.timeLeft <= 0) {
       state.timeLeft = 0;
-      stopTypingSession(`1分終了！ 今回ゲットしたコイン: ${state.sessionCoins}`);
-      addChat(`🏁 1分終了！ 今回のコイン +${state.sessionCoins}`);
+      const sessionAccuracy = state.sessionTotalChars
+        ? Math.round((state.sessionCorrectChars / state.sessionTotalChars) * 100)
+        : 0;
+      state.typingStats.lastSessionCompleted = false;
+      state.typingStats.lastSessionQuestions = state.sessionAnswered;
+      state.typingStats.lastSessionAccuracy = sessionAccuracy / 100;
+      stopTypingSession(`${currentSessionLabel()}終了！ 正確さ ${sessionAccuracy}% / コイン ${state.sessionCoins}`);
+      addChat(`🏁 ${currentSessionLabel()}終了！ 正確さ ${sessionAccuracy}% / コイン +${state.sessionCoins}`);
       setKuuMood("celebrate", "おつかれさま！", 1800);
       return;
     }
@@ -1033,6 +1201,7 @@ const triggerGiftSequence = () => {
 };
 
 const triggerCookingEvent = () => {
+  if (travelThemes.has(state.roomTheme)) return;
   const now = Date.now();
   if (now < cookingCooldownUntil) return;
   cookingCooldownUntil = now + 26000;
@@ -1076,6 +1245,7 @@ const applyLevelUps = () => {
     state.expMax = Math.round(state.expMax * 1.18);
     state.coins += 15;
     addChat(`🌟 レベル${state.level}になった！ くうがうれしそう。`);
+    receiveTreasureGift("levelup");
   }
 };
 
@@ -1111,20 +1281,22 @@ const render = () => {
   ui.typingGuide.appendChild(ui.promptEn);
 
   ui.giftBtn.disabled = state.coins < 30;
-  ui.tripBtn.disabled = state.coins < 60 || state.level < 3;
+  ui.tripBtn.disabled = state.coins < 60 || state.level < 3 || motteinTripActive;
   const unlockableTheme = nextUnlockableRoomTheme();
   ui.interiorBtn.disabled = state.coins < ROOM_THEME_UNLOCK_COST || !unlockableTheme;
   ui.interiorBtn.textContent = unlockableTheme
     ? `🛋 もようがえ (80コイン)`
     : "🛋 もようがえ（コンプリート）";
-  ui.guestBtn.disabled = guestVisiting;
-  ui.petBtn.disabled = false;
+  ui.motteinBtn.disabled = state.coins < MOTTEIN_TRIP_COST || motteinTripActive || guestVisiting || sessionRunning;
+  ui.motteinBtn.textContent = motteinTripActive ? "🐵 もってぃんとおでかけ中..." : "🐵 もってぃんとおでかけ (30ポイント)";
+  ui.guestBtn.disabled = guestVisiting || motteinTripActive;
+  ui.petBtn.disabled = true;
+  ui.petBtn.hidden = true;
   ui.praiseBtn.disabled = false;
-  ui.petBtn.textContent = "🤚 なでる (+1コイン / 10秒)";
+  ui.petBtn.textContent = "🤚 なでる (+1コイン / 5分)";
   ui.praiseBtn.textContent = "👏 ほめる (+1コイン / 10秒)";
   const totalTreasures = Object.values(state.treasureCounts).reduce((sum, count) => sum + count, 0);
-  const canGiftNow = canReceiveTreasureGift();
-  ui.treasureBtn.textContent = canGiftNow ? "🧰 たからばこをあける（受け取る）" : "🧰 たからばこを見る";
+  ui.treasureBtn.textContent = "🧰 たからばこを見る";
   ui.treasureSummary.textContent =
     totalTreasures > 0 ? `いままでにもらったプレゼント: ${totalTreasures}個` : "まだプレゼントはありません。";
   ui.treasureCountdown.textContent = "";
@@ -1168,7 +1340,7 @@ const render = () => {
 
 const onTypingSubmit = () => {
   if (!sessionRunning) {
-    ui.feedback.textContent = "スタートを押して1分チャレンジを始めてね。";
+    ui.feedback.textContent = "スタートを押して1分30秒・5問チャレンジを始めてね。";
     return;
   }
 
@@ -1192,9 +1364,21 @@ const onTypingSubmit = () => {
     return;
   }
 
-  const isCorrect = answer === typingTarget;
+  const totalChars = typingTarget.length;
+  const correctChars = typingTarget.split("").reduce((count, char, idx) => {
+    return count + (answer[idx] === char ? 1 : 0);
+  }, 0);
+  const accuracy = totalChars ? correctChars / totalChars : 0;
+  const passed = accuracy >= PASS_ACCURACY_RATIO;
 
-  if (isCorrect) {
+  state.sessionAnswered += 1;
+  state.sessionCorrectChars += correctChars;
+  state.sessionTotalChars += totalChars;
+  state.typingStats.totalQuestions += 1;
+  state.typingStats.totalCorrectChars += correctChars;
+  state.typingStats.totalChars += totalChars;
+
+  if (passed) {
     const gain = 18 + Math.floor(Math.random() * 8) + setting.expBonus;
     const baseCoin = Math.max(4, 8 + setting.coinBonus);
     const speedBonus = Math.max(0, Math.floor(state.timeLeft / 6));
@@ -1204,16 +1388,27 @@ const onTypingSubmit = () => {
     state.coins += coinGain;
     state.sessionCoins += coinGain;
     state.friendship += 7;
-    ui.feedback.textContent = `せいかい！ EXP +${gain} / コイン +${coinGain}（スピード +${speedBonus}）`;
+    ui.feedback.textContent = `OK！ (${correctChars}/${totalChars}文字・${Math.round(accuracy * 100)}%) EXP +${gain} / コイン +${coinGain}`;
     addChat(`くう: ${setting.label}モード、ばっちりだね！`);
     setKuuMood("happy", "うれしい！");
-    advancePrompt();
     applyLevelUps();
   } else {
     state.friendship = Math.max(0, state.friendship - 2);
-    ui.feedback.textContent = "おしい！ もういちど入力してみよう。";
+    ui.feedback.textContent = `おしい！ (${correctChars}/${totalChars}文字・${Math.round(accuracy * 100)}%) 60%以上でOKだよ。`;
     addChat("くう: ゆっくりでだいじょうぶ。いっしょに練習しよう！");
     setKuuMood("sad", "しゅん…");
+  }
+
+  advancePrompt();
+  if (state.sessionAnswered >= SESSION_QUESTION_LIMIT) {
+    const sessionAccuracy = state.sessionTotalChars
+      ? Math.round((state.sessionCorrectChars / state.sessionTotalChars) * 100)
+      : 0;
+    state.typingStats.lastSessionCompleted = true;
+    state.typingStats.lastSessionQuestions = state.sessionAnswered;
+    state.typingStats.lastSessionAccuracy = sessionAccuracy / 100;
+    stopTypingSession(`${SESSION_QUESTION_LIMIT}問クリア！ 正確さ ${sessionAccuracy}% / コイン ${state.sessionCoins}`);
+    addChat(`✅ ${SESSION_QUESTION_LIMIT}問クリア！ 正確さ ${sessionAccuracy}%`);
   }
 
   ui.typingInput.value = "";
@@ -1254,6 +1449,12 @@ ui.timerStartBtn.addEventListener("click", () => {
 });
 
 ui.timerStopBtn.addEventListener("click", () => {
+  const sessionAccuracy = state.sessionTotalChars
+    ? Math.round((state.sessionCorrectChars / state.sessionTotalChars) * 100)
+    : 0;
+  state.typingStats.lastSessionCompleted = false;
+  state.typingStats.lastSessionQuestions = state.sessionAnswered;
+  state.typingStats.lastSessionAccuracy = sessionAccuracy / 100;
   stopTypingSession(`ストップしたよ。今回ゲットしたコイン: ${state.sessionCoins}`);
 });
 
@@ -1280,15 +1481,7 @@ ui.typingInput.addEventListener("keydown", (e) => {
 ui.typingInput.addEventListener("input", (e) => {
   if (!sessionRunning) return;
   if (e.isComposing) return;
-  if (isValidTypingPrefix(ui.typingInput.value)) {
-    lastValidTypingValue = ui.typingInput.value;
-    updateSubmitAvailability();
-    return;
-  }
-  ui.typingInput.value = lastValidTypingValue;
-  ui.typingInput.setSelectionRange(lastValidTypingValue.length, lastValidTypingValue.length);
-  ui.feedback.textContent = "その文字はまだ入力できないよ。正しい文字に直してね。";
-  setKuuMood("sniff", "ここまでOK", 900);
+  lastValidTypingValue = ui.typingInput.value;
   updateSubmitAvailability();
 });
 
@@ -1309,11 +1502,13 @@ ui.giftBtn.addEventListener("click", () => {
   render();
 });
 
-ui.petBtn.addEventListener("click", () => {
+const handlePetAction = () => {
   const now = Date.now();
   if (now < petCooldownUntil) {
-    const remain = Math.ceil((petCooldownUntil - now) / 1000);
-    ui.feedback.textContent = `なでるは10秒で1コインだよ。あと${remain}秒待ってね。`;
+    const remainSeconds = Math.ceil((petCooldownUntil - now) / 1000);
+    const remainMinutes = Math.floor(remainSeconds / 60);
+    const remain = remainMinutes > 0 ? `${remainMinutes}分${remainSeconds % 60}秒` : `${remainSeconds}秒`;
+    ui.feedback.textContent = `なでるは5分で1コインだよ。あと${remain}待ってね。`;
     setKuuMood("sniff", "まってね", 900);
     return;
   }
@@ -1329,6 +1524,17 @@ ui.petBtn.addEventListener("click", () => {
   addChat("🤚 くうをなでた。くうはうれしそうに目を細めた。");
   setKuuMood("happy", "えへへ", 1200);
   render();
+};
+
+ui.kuuInRoom.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  handlePetAction();
+});
+
+ui.kuuInRoom.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  e.preventDefault();
+  handlePetAction();
 });
 
 ui.praiseBtn.addEventListener("click", () => {
@@ -1354,40 +1560,55 @@ ui.praiseBtn.addEventListener("click", () => {
 });
 
 ui.treasureBtn.addEventListener("click", () => {
-  if (canReceiveTreasureGift()) {
-    treasureGalleryOpen = true;
-    receiveTreasureGift("manual");
-  } else {
-    treasureGalleryOpen = !treasureGalleryOpen;
-    ui.feedback.textContent = treasureGalleryOpen
-      ? "たからばこの一覧をひらいたよ。"
-      : "たからばこの一覧をとじたよ。";
-  }
+  treasureGalleryOpen = !treasureGalleryOpen;
+  ui.feedback.textContent = treasureGalleryOpen
+    ? "たからばこの一覧をひらいたよ。"
+    : "たからばこの一覧をとじたよ。";
   render();
 });
 
 ui.tripBtn.addEventListener("click", () => {
+  if (motteinTripActive) return;
   if (state.coins < 60 || state.level < 3) return;
   state.coins -= 60;
   state.friendship += 20;
   state.exp += 20;
+  if (hiroshimaDeerSpeechTimer) {
+    clearTimeout(hiroshimaDeerSpeechTimer);
+    hiroshimaDeerSpeechTimer = null;
+  }
   roomThemeBeforeTrip = travelThemes.has(state.roomTheme) ? roomThemeBeforeTrip : state.roomTheme;
   const destination = tripDestinations[Math.floor(Math.random() * tripDestinations.length)];
   state.roomTheme = destination.theme;
   addChat(destination.chat);
   ui.feedback.textContent = destination.feedback;
   showKuuSpeech(`${destination.place}についたよ！ ${destination.speech}`, 3200);
+  if (destination.theme === "hiroshima") {
+    const deerSpeechDelay = 5000 + Math.floor(Math.random() * 5000);
+    hiroshimaDeerSpeechTimer = setTimeout(() => {
+      if (state.roomTheme === "hiroshima") {
+        showKuuSpeech("鹿のなでなで楽しいなー", 2600);
+        addChat("🦌 くう: 鹿のなでなで楽しいなー");
+      }
+      hiroshimaDeerSpeechTimer = null;
+      render();
+    }, deerSpeechDelay);
+  }
   setKuuMood("celebrate", destination.mood, 2200);
   if (hawaiiReturnTimer) {
     clearTimeout(hawaiiReturnTimer);
   }
   hawaiiReturnTimer = setTimeout(() => {
     state.roomTheme = roomThemeBeforeTrip;
+    if (hiroshimaDeerSpeechTimer) {
+      clearTimeout(hiroshimaDeerSpeechTimer);
+      hiroshimaDeerSpeechTimer = null;
+    }
     ui.feedback.textContent = "りょこうがおわって、もとのおへやにもどったよ。";
     addChat("🏠 りょこうがおわって、元のおへやにもどった。");
     hawaiiReturnTimer = null;
     render();
-  }, 30000);
+  }, 15000);
   applyLevelUps();
   render();
 });
@@ -1396,7 +1617,67 @@ ui.interiorBtn.addEventListener("click", () => {
   openRoomThemeModal();
 });
 
+ui.motteinBtn.addEventListener("click", () => {
+  if (state.coins < MOTTEIN_TRIP_COST || motteinTripActive || guestVisiting || sessionRunning) return;
+  state.coins -= MOTTEIN_TRIP_COST;
+  state.friendship += 10;
+  roomThemeBeforeTrip = travelThemes.has(state.roomTheme) ? roomThemeBeforeTrip : state.roomTheme;
+  state.motteinVisitCount += 1;
+  motteinTestPending = false;
+  clearMotteinScene();
+
+  if (guestVisitTimer) clearTimeout(guestVisitTimer);
+  if (guestActionTimer) clearInterval(guestActionTimer);
+  guestVisitTimer = null;
+  guestActionTimer = null;
+
+  motteinTripActive = true;
+  guestVisiting = false;
+  state.roomTheme = "gomiyashiki";
+  const firstVisit = state.motteinVisitCount === 1;
+
+  ui.guestImage.src = "も.png";
+  ui.guestImage.alt = "くうのおともだち、もってぃん";
+  ui.guestSpeech.textContent = "ここがもってぃんのへやなんだよ。";
+  ui.guestVisit.classList.add("active");
+  ui.guestVisit.setAttribute("aria-hidden", "false");
+  ui.feedback.textContent = "もってぃんの部屋に到着したよ。";
+  addChat("🐵 もってぃん: ここがもってぃんのへやなんだよ。");
+  showKuuSpeech("へぇ。", 1400);
+  setKuuMood("walk", "きょろきょろ", 1400);
+
+  motteinSceneTimer = setTimeout(() => {
+    ui.guestImage.src = "も母.png";
+    ui.guestImage.alt = "もってぃんの母";
+    ui.guestSpeech.textContent = "もってぃん！こんな汚いお部屋に友だちを呼んじゃだめじゃないの。";
+    addChat("👩 もってぃんの母: もってぃん！こんな汚いお部屋に友だちを呼んじゃだめじゃないの。");
+    render();
+
+    if (firstVisit) {
+      ui.feedback.textContent = "もってぃんの母に注意されて、今日は帰ることになった。";
+      showKuuSpeech("またあそびにくるね。", 1800);
+      setKuuMood("sniff", "しゅん", 1500);
+      returnFromMotteinRoom("もってぃんの部屋から、くうのおへやにもどったよ。", "🏠 もってぃんの部屋をあとにして、くうのおへやにもどった。");
+      return;
+    }
+
+    motteinSceneTimer = setTimeout(() => {
+      showKuuSpeech("一緒に片付けるの。", 1800);
+      addChat("🐻‍❄️ くう: 一緒に片付けるの。");
+      ui.feedback.textContent = "片付けテストを始めるよ。5問で正確さ60%以上を目指そう。";
+      motteinTestPending = true;
+      state.typingStats.lastSessionCompleted = false;
+      state.typingStats.lastSessionQuestions = 0;
+      state.typingStats.lastSessionAccuracy = 0;
+      startTypingSession();
+      render();
+    }, 1400);
+  }, 1800);
+  render();
+});
+
 ui.guestBtn.addEventListener("click", () => {
+  if (motteinTripActive) return;
   state.coins += 3;
   ui.feedback.textContent = "おきゃくさまをよんだよ。コイン +3！";
   addChat("🪙 おきゃくさまをよんで、コインを3まいもらった。");
