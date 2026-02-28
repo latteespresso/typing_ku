@@ -646,6 +646,14 @@ button:disabled {
   background: url("./snowdome.png") center / cover no-repeat;
 }
 
+.room.room-image.room-theme-safari {
+  background: url("./safariroom.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-aquarium {
+  background: url("./aquarium.png") center / cover no-repeat;
+}
+
 .room.room-image.room-theme-hawaii {
   background: url("./beach.png") center / cover no-repeat;
 }
@@ -666,13 +674,26 @@ button:disabled {
   background: url("./newyork.png") center / cover no-repeat;
 }
 
+.room.room-image.room-theme-osakaexpo {
+  background: url("./osaka_expo.png") center / cover no-repeat;
+}
+
+.room.room-image.room-theme-gomiyashiki {
+  background: url("./ゴミ屋敷.png") center / cover no-repeat;
+}
+
 .room.room-image.room-theme-hawaii > :not(#kuuInRoom),
 .room.room-image.room-theme-hiroshima > :not(#kuuInRoom),
 .room.room-image.room-theme-montsaintmichel > :not(#kuuInRoom),
 .room.room-image.room-theme-dubrovnik > :not(#kuuInRoom),
 .room.room-image.room-theme-newyork > :not(#kuuInRoom),
-.room.room-image.room-theme-obake > :not(#kuuInRoom),
-.room.room-image.room-theme-snowdome > :not(#kuuInRoom) {
+.room.room-image.room-theme-osakaexpo > :not(#kuuInRoom),
+.room.room-image.room-theme-obake > :not(#kuuInRoom):not(#giftEvent),
+.room.room-image.room-theme-snowdome > :not(#kuuInRoom):not(#giftEvent) {
+  display: none !important;
+}
+
+.room.room-image.room-theme-gomiyashiki > :not(#kuuInRoom):not(#guestVisit):not(#giftEvent) {
   display: none !important;
 }
 
@@ -721,8 +742,12 @@ button:disabled {
   border-radius: 10px 10px 0 0;
 }
 
-.room.room-image.room-theme-hiroshima .travel-sunglasses,
-.room.room-image.room-theme-hiroshima .travel-carry {
+.room.room-image.room-theme-hiroshima .travel-sunglasses {
+  display: block;
+}
+
+.room.room-image.room-theme-hiroshima .travel-carry,
+.room.room-image.room-theme-montsaintmichel .travel-carry {
   display: block;
 }
 
@@ -757,6 +782,18 @@ button:disabled {
   background: url("./テーブル.png") center / contain no-repeat;
   z-index: 6;
   pointer-events: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .room.room-image:not(.room-theme-normal):not(.room-theme-fancy) .left-table {
@@ -1169,6 +1206,7 @@ button:disabled {
   transform-style: preserve-3d;
   will-change: transform;
   animation: kuuBob 2.4s ease-in-out infinite;
+  cursor: pointer;
 }
 
 .kuu-in-room::before {
@@ -1184,6 +1222,12 @@ button:disabled {
   z-index: -1;
   pointer-events: none;
   animation: kuuShadowPulse 2.4s ease-in-out infinite;
+}
+
+.kuu-in-room:focus-visible {
+  outline: 3px solid #ff9ecf;
+  outline-offset: 6px;
+  border-radius: 12px;
 }
 
 .kuu-body {
